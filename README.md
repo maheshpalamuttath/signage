@@ -94,10 +94,8 @@ WantedBy=multi-user.target
 ### 2. Enable & Start Service
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl start signage
-sudo systemctl enable signage
-sudo systemctl status signage
+
+sudo systemctl daemon-reload && sudo systemctl start signage && sudo systemctl enable signage && sudo systemctl status signage
 ```
 
 ### 3. Allow Firewall Access
