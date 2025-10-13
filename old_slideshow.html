@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Digital Signage</title>
+<style>
+html, body { margin:0; padding:0; width:100%; height:100%; background:black; overflow:hidden; }
+#container { width:100%; height:100%; position:relative; }
+
+img, video, iframe {
+    width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;
+    transform: translateX(100%); transition: transform 1s ease-in-out; border:none;
+}
+img.show, video.show, iframe.show { transform: translateX(0); }
+img.prev, video.prev, iframe.prev { transform: translateX(-100%); }
+</style>
+</head>
+<body>
+<div id="container"></div>
+
+<script>
+let slides = [];
+let index = 0;
+let prevIndex = 0;
+const container = document.getElementById('container');
+
+async function loadMedia() {
+    const mediaSlides = [];
+    const resUrls = await fetch('/urls');
+    const urls = await resUrls.json();
+    urls.forEach(url => {
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        mediaSlides.push({ type:'url', element:iframe });
+    });
+
+    const resFiles = await fetch('/files');
+    const files = await resFiles.json();
+    files.forEach(f => {
+        const ext = f.split('.').pop().toLowerCase();
+        if(['png','jpg','jpeg','gif'].includes(ext)){
+            const img = document.createElement('img');
+            img.src = `/media/${f}`;
+            mediaSlides.push({ type:'image', element:img });
+        } else if(ext === 'mp4'){
+            const video = document.createElement('video');
+            video.src = `/media/${f}`;
+            video.autoplay=false; video.loop=false; video.muted=true; video.preload='auto';
+            mediaSlides.push({ type:'video', element:video });
+        }
+    });
+    return mediaSlides;
+}
+
+function showNext() {
+    if(slides.length===0) return;
+    const current = slides[index];
+    const prev = slides[prevIndex];
+
+    if(prev){ prev.element.classList.remove('show'); prev.element.classList.add('prev'); }
+    current.element.classList.remove('prev'); current.element.classList.add('show');
+
+    if(current.type==='video'){
+        current.element.currentTime=0; current.element.play();
+        current.element.onended=()=>{ prevIndex=index; index=(index+1)%slides.length; showNext(); };
+    } else {
+        setTimeout(()=>{ prevIndex=index; index=(index+1)%slides.length; showNext(); },15000);
+    }
+}
+
+async function startSlideshow(){
+    slides = await loadMedia();
+    slides.forEach(slide => container.appendChild(slide.element));
+    prevIndex = slides.length-1;
+    showNext();
+}
+
+async function refreshMedia(){
+    const newSlides = await loadMedia();
+    const newFiles = newSlides.map(s => s.element.src || s.element.srcdoc || s.element.srcObject);
+    const oldFiles = slides.map(s => s.element.src || s.element.srcdoc || s.element.srcObject);
+    const hasNew = newFiles.some(f => !oldFiles.includes(f));
+    if(hasNew){
+        container.innerHTML='';
+        slides = newSlides;
+        slides.forEach(slide => container.appendChild(slide.element));
+        index=0; prevIndex=slides.length-1;
+        showNext();
+    }
+}
+
+startSlideshow();
+// Refresh every 2 minutes without reloading page
+setInterval(refreshMedia, 120000);
+</script>
+</body>
+</html>
+

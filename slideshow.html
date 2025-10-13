@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Digital Signage Slideshow</title>
+<style>
+html, body {
+  margin:0; padding:0; width:100%; height:100%; background:black; overflow:hidden;
+}
+#container {
+  display:flex;
+  width:100%;
+  height:100%;
+  transition: transform 1s ease-in-out;
+}
+.slide {
+  flex-shrink:0;
+  width:100%;
+  height:100%;
+  position:relative;
+}
+img, video, iframe {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border:none;
+}
+
+/* Overlay for banner/video */
+#overlay {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  z-index:10; display:flex; justify-content:center; align-items:center;
+  background:black; visibility:hidden;
+}
+#overlay img, #overlay video {
+  width:100%; height:100%; object-fit:cover;
+}
+</style>
+</head>
+<body>
+
+<div id="container"></div>
+<div id="overlay"></div>
+
+<script>
+let slides = [];
+let currentIndex = 0;
+let timer = null;
+let currentUrls = [];
+let currentFiles = [];
+const container = document.getElementById("container");
+const overlay = document.getElementById("overlay");
+
+// Overlay settings
+const overlayFolder = "/overlay_media/";
+const overlayFiles = ["video1.mp4"]; // add more overlay files here
+const overlayDuration = 5000; // 5 seconds
+
+function getUniqueSrc(src){ return src + "?v=" + new Date().getTime(); }
+function clearTimer(){ if(timer){ clearTimeout(timer); timer=null; } }
+
+function showSlide(index, instant=false){
+  container.style.transition = instant ? "none" : "transform 1s ease-in-out";
+  container.style.transform = `translateX(-${index*100}%)`;
+}
+
+function nextSlide(){
+  if(slides.length===0) return;
+  const current = slides[currentIndex];
+  clearTimer();
+
+  if(current.type==="video"){
+    current.element.currentTime=0;
+    current.element.play();
+    current.element.onended = ()=>{ moveToNextSlide(); };
+  } else {
+    timer = setTimeout(()=>{ moveToNextSlide(); }, 10000);
+  }
+}
+
+function moveToNextSlide(){
+  currentIndex++;
+  if(currentIndex<slides.length){
+    showSlide(currentIndex);
+    nextSlide();
+  } else {
+    // End-of-loop overlay
+    showOverlay();
+  }
+}
+
+function showOverlay(){
+  overlay.innerHTML="";
+  const file = overlayFiles[Math.floor(Math.random()*overlayFiles.length)];
+  const path = overlayFolder + file;
+
+  if(file.endsWith(".mp4")){
+    const video = document.createElement("video");
+    video.src=getUniqueSrc(path);
+    video.autoplay=true; video.loop=false; video.muted=true; video.preload="auto";
+    overlay.appendChild(video);
+  } else {
+    const img = document.createElement("img");
+    img.src=getUniqueSrc(path);
+    overlay.appendChild(img);
+  }
+
+  overlay.style.visibility="visible";
+
+  setTimeout(() => {
+    overlay.style.visibility="hidden";
+    currentIndex=0;
+    showSlide(currentIndex,true);
+    nextSlide();
+  }, overlayDuration);
+}
+
+// Load media/URLs from server
+async function loadSlides(){
+  const [urlsRes, filesRes] = await Promise.all([fetch("/urls"), fetch("/files")]);
+  const urls = await urlsRes.json();
+  const files = await filesRes.json();
+  currentUrls = urls;
+  currentFiles = files;
+
+  slides = [];
+  container.innerHTML="";
+
+  // Add URLs
+  urls.forEach(url=>{
+    const wrapper=document.createElement("div");
+    wrapper.className="slide";
+    const iframe=document.createElement("iframe");
+    iframe.src=getUniqueSrc(url);
+    wrapper.appendChild(iframe);
+    slides.push({type:"url", element:iframe});
+    container.appendChild(wrapper);
+  });
+
+  // Add media files
+  files.forEach(f=>{
+    const ext=f.split(".").pop().toLowerCase();
+    const wrapper=document.createElement("div");
+    wrapper.className="slide";
+    if(["png","jpg","jpeg","gif"].includes(ext)){
+      const img=document.createElement("img");
+      img.src=getUniqueSrc(`/media/${f}`);
+      wrapper.appendChild(img);
+      slides.push({type:"image", element:img});
+    } else if(ext==="mp4"){
+      const video=document.createElement("video");
+      video.src=getUniqueSrc(`/media/${f}`);
+      video.autoplay=false; video.loop=false; video.muted=true; video.preload="auto";
+      wrapper.appendChild(video);
+      slides.push({type:"video", element:video});
+    }
+    container.appendChild(wrapper);
+  });
+
+  currentIndex=0;
+  showSlide(currentIndex,true);
+  nextSlide();
+}
+
+// Monitor changes in media/URLs
+async function monitorChanges(){
+  const [urlsRes, filesRes] = await Promise.all([fetch("/urls"), fetch("/files")]);
+  const urls = await urlsRes.json();
+  const files = await filesRes.json();
+
+  const urlsChanged = JSON.stringify(urls)!==JSON.stringify(currentUrls);
+  const filesChanged = JSON.stringify(files)!==JSON.stringify(currentFiles);
+
+  if(urlsChanged || filesChanged){
+    console.log("Change detected — will reload after current loop.");
+    // Wait until loop finishes, then reload
+    setTimeout(loadSlides, overlayDuration+1000);
+  }
+}
+
+// Initialize slideshow
+(async function init(){
+  await loadSlides();
+  setInterval(monitorChanges,10000);
+})();
+</script>
+
+</body>
+</html>
+
