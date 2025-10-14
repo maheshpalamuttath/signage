@@ -22,7 +22,7 @@ sudo apt install -y python3 python3-venv python3-pip git
 ### 2. Clone Repository
 
 ```bash
-sudo git clone https://github.com/maheshpalamuttath/signage.git
+git clone https://github.com/maheshpalamuttath/signage.git
 cd signage
 ```
 
