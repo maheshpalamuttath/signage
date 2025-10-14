@@ -29,7 +29,7 @@ cd signage
 ### 3. Set Permissions
 
 ```bash
-sudo chown -R koha:koha /home/username/signage
+sudo chown -R username:username /home/username/signage
 sudo chmod -R 775 /home/username/signage/signage_media
 ```
 
