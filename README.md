@@ -29,8 +29,8 @@ cd signage
 ### 3. Set Permissions
 
 ```bash
-sudo chown -R koha:koha /home/koha/signage
-sudo chmod -R 775 /home/koha/signage/signage_media
+sudo chown -R koha:koha /home/username/signage
+sudo chmod -R 775 /home/username/signage/signage_media
 ```
 
 ### 4. Set Up Python Virtual Environment
@@ -38,7 +38,7 @@ sudo chmod -R 775 /home/koha/signage/signage_media
 ```bash
 sudo python3 -m venv myenv
 source myenv/bin/activate
-sudo chown -R $USER:$USER /home/koha/signage/myenv
+sudo chown -R $USER:$USER /home/username/signage/myenv
 pip install flask gunicorn
 ```
 
@@ -83,9 +83,9 @@ After=network.target
 [Service]
 User=koha
 Group=koha
-WorkingDirectory=/home/koha/signage
-Environment="PATH=/home/koha/signage/myenv/bin"
-ExecStart=/home/koha/signage/myenv/bin/gunicorn -b 0.0.0.0:8000 server:app
+WorkingDirectory=/home/username/signage
+Environment="PATH=/home/username/signage/myenv/bin"
+ExecStart=/home/username/signage/myenv/bin/gunicorn -b 0.0.0.0:8000 server:app
 Restart=always
 
 [Install]
@@ -110,7 +110,7 @@ sudo ufw reload
 
 ```bash
 pkill gunicorn
-/home/koha/signage/myenv/bin/gunicorn -b 0.0.0.0:8000 server:app -D
+/home/username/signage/myenv/bin/gunicorn -b 0.0.0.0:8000 server:app -D
 ```
 
 ---
@@ -136,13 +136,13 @@ firefox-esr --kiosk http://<your-ip>:8000
 ### 1. Create Startup Script
 
 ```bash
-vim /home/client-username/start-kiosk.sh
+vim /home/username/start-kiosk.sh
 ```
 ```
 #!/bin/bash
 
-URL="http://172.16.36.11:8000"
-LOGFILE="/home/shec/firefox-kiosk.log"
+URL="http://<your-ip>:8000"
+LOGFILE="/home/username/firefox-kiosk.log"
 
 echo "$(date) - Starting kiosk script" >> "$LOGFILE"
 
@@ -168,7 +168,7 @@ exec /usr/bin/firefox-esr --kiosk --private-window "$URL" >> "$LOGFILE" 2>&1
 
 ```
 ```
-chmod +x /home/client-username/start-kiosk.sh
+chmod +x /home/username/start-kiosk.sh
 ```
 
 > The script should check if the signage server is up and then launch Firefox.
@@ -191,7 +191,7 @@ Wants=graphical.target network-online.target
 Type=simple
 User=shec
 Environment=DISPLAY=:0
-ExecStart=/usr/bin/bash /home/shec/start-kiosk.sh
+ExecStart=/usr/bin/bash /home/username/start-kiosk.sh
 Restart=always
 RestartSec=5
 
