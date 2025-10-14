@@ -38,6 +38,7 @@ sudo chmod -R 775 /home/koha/signage/signage_media
 ```bash
 sudo python3 -m venv myenv
 source myenv/bin/activate
+sudo chown -R $USER:$USER /home/koha/signage/myenv
 pip install flask gunicorn
 ```
 
