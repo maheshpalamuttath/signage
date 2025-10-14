@@ -4,7 +4,7 @@ This repository contains a minimal Flask-based digital signage application. It s
 
 ## Prerequisites
 
-- Ubuntu/Xubuntu system
+- Ubuntu/Xubuntu system 24.04 LTS
 - Python 3
 - Git
 - Firefox or Firefox ESR
