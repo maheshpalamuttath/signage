@@ -141,10 +141,14 @@ vim /home/username/start-kiosk.sh
 ```
 #!/bin/bash
 
-URL="http://<your-ip>:8000"
-LOGFILE="/home/username/firefox-kiosk.log"
+URL="http://192.168.1.120:8000"
+LOGFILE="/home/pcasl/firefox-kiosk.log"
 
 echo "$(date) - Starting kiosk script" >> "$LOGFILE"
+
+# Ensure DISPLAY is set (safety)
+export DISPLAY=:0
+export XAUTHORITY=/home/pcasl/.Xauthority
 
 # Wait for X server
 while ! xset q &>/dev/null; do
@@ -155,16 +159,20 @@ done
 # Extra wait for XFCE panels and window manager
 sleep 8
 
-# Wait until signage server is reachable
-while ! curl -s --head --request GET "$URL" | grep "200 OK" > /dev/null; do
+# Wait until signage server is reachable (robust check)
+while ! curl -s --connect-timeout 5 "$URL" > /dev/null; do
     echo "$(date) - Waiting for server at $URL..." >> "$LOGFILE"
     sleep 5
 done
 
 echo "$(date) - Server reachable. Launching Firefox..." >> "$LOGFILE"
 
-# Launch Firefox in kiosk mode with private window (optional)
-exec /usr/bin/firefox-esr --kiosk --private-window "$URL" >> "$LOGFILE" 2>&1
+# Launch Firefox in kiosk mode
+exec /usr/bin/firefox-esr \
+    --kiosk \
+    --private-window \
+    --no-remote \
+    "$URL" >> "$LOGFILE" 2>&1
 
 ```
 ```
