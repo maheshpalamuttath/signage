@@ -12,28 +12,28 @@ This repository contains a minimal Flask-based digital signage application. It s
 
 ## Installation
 
-### 1. Update & Install Dependencies
+### Update & Install Dependencies
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y python3 python3-venv python3-pip git
 ````
 
-### 2. Clone Repository
+### Clone Repository
 
 ```bash
 git clone https://github.com/maheshpalamuttath/signage.git
 cd signage
 ```
 
-### 3. Set Permissions
+### Set Permissions
 
 ```bash
 sudo chown -R $USER:$USER /home/username/signage
 sudo chmod -R 775 /home/username/signage/signage_media
 ```
 
-### 4. Set Up Python Virtual Environment
+### Set Up Python Virtual Environment
 
 ```bash
 sudo python3 -m venv myenv
@@ -42,7 +42,7 @@ sudo chown -R $USER:$USER /home/username/signage/myenv
 pip install flask gunicorn
 ```
 
-### 5. Run Flask Server (Development Mode)
+### Run Flask Server (Development Mode)
 
 ```bash
 python3 server.py
@@ -67,7 +67,7 @@ Slideshow: http://<your-ip>:8000
 
 ## Running as a Systemd Service
 
-### 1. Create Gunicorn Service
+### Create Gunicorn Service
 
 ```bash
 sudo vim /etc/systemd/system/signage.service
@@ -92,29 +92,46 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-### 2. Enable & Start Service
+### Enable & Start Service
 
 ```bash
 
 sudo systemctl daemon-reload && sudo systemctl start signage && sudo systemctl enable signage && sudo systemctl status signage
 ```
 
-### 3. Allow Firewall Access
+### Allow Firewall Access
 
 ```bash
 sudo ufw allow 8000/tcp
 sudo ufw reload
 ```
 
-### 4. Restart Gunicorn After Code Changes in Future
+### Restart Gunicorn After Code Changes in Future
 
 ```bash
 pkill gunicorn
 /home/username/signage/myenv/bin/gunicorn -b 0.0.0.0:8000 server:app -D
 ```
-
 ---
+### Set Auto Login
 
+Open the LightDM configuration file for editing:
+```bash
+sudo nano /etc/lightdm/lightdm.conf
+```
+Add the following lines to enable auto-login:
+```bash
+[Seat:*]
+autologin-user=username
+autologin-user-timeout=0
+```
+Save the file and exit.
+
+Restart LightDM to apply changes:
+```bash
+sudo systemctl restart lightdm
+```
+---
 ## Fullscreen Slideshow in Firefox
 
 ### 1. Launch in Kiosk Mode
@@ -128,12 +145,11 @@ For Firefox ESR:
 ```bash
 firefox-esr --kiosk http://<your-ip>:8000
 ```
-
 ---
 
 ## Automatic Firefox Kiosk on Boot (Xubuntu) Client
 
-### 1. Create Startup Script
+### Create Startup Script
 
 ```bash
 vim /home/username/start-kiosk.sh
@@ -181,7 +197,7 @@ chmod +x /home/username/start-kiosk.sh
 
 > The script should check if the signage server is up and then launch Firefox.
 
-### 2. Create Systemd Service
+### Create Systemd Service
 
 ```bash
 sudo vim /etc/systemd/system/firefox-kiosk.service
@@ -208,11 +224,17 @@ WantedBy=graphical.target
 
 ```
 
-### 3. Enable Service
+### Enable Service
 
 ```bash
 sudo systemctl daemon-reload && sudo systemctl enable firefox-kiosk.service && sudo systemctl start firefox-kiosk.service
 
+```
+### Reboot the System
+
+Run the following command to restart the system and apply all changes:
+```bash
+sudo reboot
 ```
 
 > On boot, systemd waits for the network, checks the signage server, and opens Firefox in kiosk mode automatically.
