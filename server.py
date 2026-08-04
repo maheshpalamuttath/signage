@@ -198,7 +198,10 @@ def allowed_file(filename):
 @app.route('/admin')
 @login_required
 def admin():
-    files = sorted(os.listdir(SIGNAGE_FOLDER))
+    files = sorted(
+    [f for f in os.listdir(SIGNAGE_FOLDER) if allowed_file(f)],
+    key=lambda f: os.path.getmtime(os.path.join(SIGNAGE_FOLDER, f))
+)
     urls = []
     if os.path.exists(URL_FILE):
         with open(URL_FILE,'r') as f:
@@ -269,8 +272,11 @@ def delete_file():
 
 @app.route('/files')
 def list_files():
-    return jsonify([f for f in os.listdir(SIGNAGE_FOLDER) if allowed_file(f)])
-
+    files = sorted(
+        [f for f in os.listdir(SIGNAGE_FOLDER) if allowed_file(f)],
+        key=lambda f: os.path.getmtime(os.path.join(SIGNAGE_FOLDER, f))
+    )
+    return jsonify(files)
 
 @app.route('/urls')
 def list_urls():
