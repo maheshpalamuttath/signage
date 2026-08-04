@@ -71,6 +71,8 @@ let currentIndex = 0;
 let timer = null;
 let currentUrls = [];
 let currentFiles = [];
+let reloadPending=false;
+let reloading=false;
 
 const container = document.getElementById("container");
 const overlay = document.getElementById("overlay");
@@ -159,9 +161,10 @@ function showOverlay(){
   }
 }
 
-function endOverlay() {
+async function endOverlay() {
   overlay.style.visibility = "hidden";
   overlay.innerHTML = "";
+  if(reloadPending && !reloading){reloading=true;reloadPending=false;await loadSlides(false);reloading=false;}
   currentIndex = 0;
   showSlide(currentIndex, true);
   nextSlide();
@@ -246,14 +249,14 @@ async function monitorChanges(){
   if(urlsChanged || filesChanged){
     console.log("Change detected — reloading assets...");
     // Load slides dynamically without disrupting current view states
-    await loadSlides(false);
+    reloadPending = true;
   }
 }
 
 // Init
 (async function(){
   // 1. Prepare assets silently
-  await loadSlides(false);
+  reloadPending = true;
   // 2. Play the overlay immediately on boot
   showOverlay();
   // 3. Keep polling for changes every 10 seconds
